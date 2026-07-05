@@ -3,7 +3,10 @@ const {
   getProperty,
   getMyProperties,
   editProperty,
-  removeProperty
+  removeProperty,
+  uploadPropertyImages,
+  removePropertyImage,
+  searchAllProperties 
 } = require('./property.service');
 const { success, error } = require('../../utils/response');
 
@@ -52,4 +55,38 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { create, getById, getMine, update, remove };
+const uploadImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return error(res, 400, 'No images uploaded');
+    }
+
+    const urls = await uploadPropertyImages(req.params.id, req.user.id, req.files);
+    return success(res, 200, 'Images uploaded successfully', urls);
+  } catch (err) {
+    return error(res, 400, err.message);
+  }
+};
+
+const deleteImage = async (req, res) => {
+  try {
+    const result = await removePropertyImage(req.params.id, req.params.imageId, req.user.id);
+    return success(res, 200, result.message);
+  } catch (err) {
+    return error(res, 403, err.message);
+  }
+};
+
+const search = async (req, res) => {
+  try {
+    const { city, minPrice, maxPrice, guests, checkIn, checkOut, keyword } = req.query;
+    const filters = { city, minPrice, maxPrice, guests, checkIn, checkOut, keyword };
+
+    const result = await searchAllProperties(filters);
+    return success(res, 200, `Properties fetched from ${result.source}`, result.results);
+  } catch (err) {
+    return error(res, 400, err.message);
+  }
+};
+
+module.exports = { create, getById, getMine, update, remove, uploadImages, deleteImage, search };

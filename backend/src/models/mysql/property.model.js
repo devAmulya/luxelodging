@@ -65,10 +65,59 @@ const deleteProperty = async (id, hostId) => {
   return result.affectedRows;
 };
 
+const searchProperties = async (filters) => {
+  const { city, minPrice, maxPrice, guests, checkIn, checkOut, keyword } = filters;
+
+  let query = `
+    SELECT DISTINCT p.* FROM properties p
+    LEFT JOIN availability a ON p.id = a.property_id
+    WHERE p.is_active = TRUE
+  `;
+  const values = [];
+
+  if (city) {
+    query += ' AND p.city LIKE ?';
+    values.push(`%${city}%`);
+  }
+
+  if (minPrice) {
+    query += ' AND p.price_per_night >= ?';
+    values.push(minPrice);
+  }
+
+  if (maxPrice) {
+    query += ' AND p.price_per_night <= ?';
+    values.push(maxPrice);
+  }
+
+  if (guests) {
+    query += ' AND p.guests_allowed >= ?';
+    values.push(guests);
+  }
+
+  if (keyword) {
+    query += ' AND MATCH(p.title, p.description) AGAINST (? IN NATURAL LANGUAGE MODE)';
+    values.push(keyword);
+  }
+
+  // Exclude properties that have ANY booked date within the requested range
+  if (checkIn && checkOut) {
+    query += `
+      AND p.id NOT IN (
+        SELECT property_id FROM availability 
+        WHERE date BETWEEN ? AND ? AND is_booked = TRUE
+      )
+    `;
+    values.push(checkIn, checkOut);
+  }
+
+  query += ' ORDER BY p.created_at DESC LIMIT 50';
+
+  const [rows] = await pool.query(query, values);
+  return rows;
+};
+
 module.exports = {
-  createProperty,
-  findPropertyById,
-  findPropertiesByHost,
-  updateProperty,
-  deleteProperty
+  createProperty, findPropertyById, findPropertiesByHost,
+  updateProperty, deleteProperty, searchProperties
 };
