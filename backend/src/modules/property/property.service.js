@@ -31,6 +31,8 @@ const addProperty = async (hostId, data) => {
     latitude, longitude, pricePerNight, bedrooms, bathrooms, beds, guestsAllowed
   });
 
+  await deleteCacheByPattern('search:*'); // NEW — new property should appear in searches immediately
+
   return { id: propertyId, title, city, country, pricePerNight };
 };
 
@@ -61,6 +63,7 @@ const removeProperty = async (id, hostId) => {
   if (!affectedRows) {
     throw new Error('Property not found or you do not have permission to delete it');
   }
+  await deleteCacheByPattern('search:*'); // NEW — deleted property shouldn't linger in cached results
   return { message: 'Property deleted successfully' };
 };
 
