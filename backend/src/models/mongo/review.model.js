@@ -14,6 +14,11 @@ const reviewSchema = new mongoose.Schema({
     type: String,        // Denormalized for fast display (avoid MySQL join)
     required: true
   },
+  bookingId: {
+    type: Number,
+    required: true,
+    unique: true // one review per booking — prevents duplicate reviews
+  },
   rating: {
     type: Number,
     required: true,

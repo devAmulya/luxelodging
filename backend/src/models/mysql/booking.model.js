@@ -39,4 +39,12 @@ const findBookingsByHost = async (hostId) => {
   return rows;
 };
 
-module.exports = { insertBooking, findBookingsByGuest, findBookingsByHost };
+const findBookingById = async (bookingId) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM bookings WHERE id = ?',
+    [bookingId]
+  );
+  return rows[0];
+};
+
+module.exports = { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById };
