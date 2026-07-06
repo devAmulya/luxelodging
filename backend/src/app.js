@@ -5,6 +5,7 @@ const connectMongo = require('./config/mongo');
 const { testRedis } = require('./config/redis');
 const authRoutes = require('./modules/auth/auth.routes');
 const propertyRoutes = require('./modules/property/property.routes');
+const bookingRoutes = require('./modules/booking/booking.routes');
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 const startServer = async () => {
   await testConnection();
