@@ -2,8 +2,10 @@ const { isRangeAvailable, getBookedDates } = require('../../models/mysql/availab
 const { findPropertyById } = require('../../models/mysql/property.model');
 const { getConnection } = require('../../config/mysql');
 const { lockAndCheckAvailability, markDatesAsBooked } = require('../../models/mysql/availability.model');
-const { insertBooking, findBookingsByGuest, findBookingsByHost } = require('../../models/mysql/booking.model');
+const { insertBooking, findBookingsByGuest, findBookingsByHost, updatePaymentStatus } = require('../../models/mysql/booking.model');
 const { deleteCacheByPattern } = require('../../utils/cache');
+const razorpay = require('../../config/razorpay');
+const crypto = require('crypto');
 
 const checkAvailability = async (propertyId, checkIn, checkOut) => {
   const property = await findPropertyById(propertyId);
@@ -70,16 +72,27 @@ const createBooking = async (guestId, { propertyId, checkIn, checkOut, numberOfG
     const nights = (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24);
     const totalPrice = nights * property.price_per_night;
 
+    // Create Razorpay order (amount in paise, hence * 100)
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(totalPrice * 100),
+      currency: 'INR',
+      receipt: `booking_${Date.now()}`
+    });
+
     await markDatesAsBooked(connection, propertyId, checkIn, checkOut);
 
     const booking = await insertBooking(connection, {
-      guestId, propertyId, checkIn, checkOut, numberOfGuests, totalPrice
+      guestId, propertyId, checkIn, checkOut, numberOfGuests, totalPrice,
+      razorpayOrderId: razorpayOrder.id
     });
 
     await connection.commit();
     await deleteCacheByPattern('search:*');
 
-    return { ...booking, totalPrice, nights, checkIn, checkOut };
+    return { ...booking, totalPrice, nights, checkIn, checkOut,
+      razorpayOrderId: razorpayOrder.id,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID // frontend needs this to open checkout
+     };
 
   } catch (err) {
     await connection.rollback();
@@ -87,6 +100,25 @@ const createBooking = async (guestId, { propertyId, checkIn, checkOut, numberOfG
   } finally {
     connection.release();
   }
+};
+
+const verifyPayment = async (bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+  const body = razorpayOrderId + '|' + razorpayPaymentId;
+
+  const expectedSignature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(body)
+    .digest('hex');
+
+  const isValid = expectedSignature === razorpaySignature;
+
+  if (!isValid) {
+    throw new Error('Payment verification failed — signature mismatch');
+  }
+
+  await updatePaymentStatus(bookingId, 'paid', razorpayOrderId, razorpayPaymentId);
+
+  return { message: 'Payment verified successfully', status: 'paid' };
 };
 
 const getMyBookings = async (guestId) => {
@@ -97,4 +129,6 @@ const getHostBookings = async (hostId) => {
   return await findBookingsByHost(hostId);
 };
 
-module.exports = { checkAvailability, getPropertyCalendar, createBooking, getMyBookings, getHostBookings };
+module.exports = {
+  checkAvailability, getPropertyCalendar, createBooking, getMyBookings, getHostBookings, verifyPayment
+};

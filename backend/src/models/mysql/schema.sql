@@ -73,6 +73,8 @@ CREATE TABLE bookings (
     total_price DECIMAL(10,2) NOT NULL,
     status ENUM('confirmed', 'cancelled', 'completed') DEFAULT 'confirmed',
     payment_status ENUM('pending', 'paid', 'refunded') DEFAULT 'pending',
+    razorpay_order_id VARCHAR(100) DEFAULT NULL,
+    razorpay_payment_id VARCHAR(100) DEFAULT NULL
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (guest_id) REFERENCES users(id) ON DELETE CASCADE,

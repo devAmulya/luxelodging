@@ -4,14 +4,14 @@ const generateBookingReference = () => {
   return 'LX' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
 };
 
-const insertBooking = async (connection, { guestId, propertyId, checkIn, checkOut, numberOfGuests, totalPrice }) => {
+const insertBooking = async (connection, { guestId, propertyId, checkIn, checkOut, numberOfGuests, totalPrice, razorpayOrderId }) => {
   const bookingReference = generateBookingReference();
 
   const [result] = await connection.query(
     `INSERT INTO bookings 
-      (booking_reference, guest_id, property_id, check_in, check_out, number_of_guests, total_price, status, payment_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', 'pending')`,
-    [bookingReference, guestId, propertyId, checkIn, checkOut, numberOfGuests, totalPrice]
+      (booking_reference, guest_id, property_id, check_in, check_out, number_of_guests, total_price, status, payment_status, razorpay_order_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', 'pending', ?)`,
+    [bookingReference, guestId, propertyId, checkIn, checkOut, numberOfGuests, totalPrice, razorpayOrderId]
   );
 
   return { id: result.insertId, bookingReference };
@@ -47,4 +47,12 @@ const findBookingById = async (bookingId) => {
   return rows[0];
 };
 
-module.exports = { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById };
+const updatePaymentStatus = async (bookingId, status, razorpayOrderId = null, razorpayPaymentId = null) => {
+  const [result] = await pool.query(
+    `UPDATE bookings SET payment_status = ?, razorpay_order_id = ?, razorpay_payment_id = ? WHERE id = ?`,
+    [status, razorpayOrderId, razorpayPaymentId, bookingId]
+  );
+  return result.affectedRows;
+};
+
+module.exports = { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById, updatePaymentStatus };

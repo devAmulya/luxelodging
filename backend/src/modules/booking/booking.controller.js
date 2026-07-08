@@ -1,6 +1,6 @@
 const { checkAvailability, getPropertyCalendar } = require('./booking.service');
 const { success, error } = require('../../utils/response');
-const { createBooking, getMyBookings, getHostBookings } = require('./booking.service');
+const { createBooking, getMyBookings, getHostBookings, verifyPayment } = require('./booking.service');
 
 const checkDates = async (req, res) => {
   try {
@@ -42,6 +42,21 @@ const book = async (req, res) => {
   }
 };
 
+const confirmPayment = async (req, res) => {
+  try {
+    const { bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    if (!bookingId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return error(res, 400, 'All payment verification fields are required');
+    }
+
+    const result = await verifyPayment(bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature);
+    return success(res, 200, result.message, result);
+  } catch (err) {
+    return error(res, 400, err.message);
+  }
+};
+
 const myBookings = async (req, res) => {
   try {
     const bookings = await getMyBookings(req.user.id);
@@ -60,4 +75,4 @@ const hostBookings = async (req, res) => {
   }
 };
 
-module.exports = { checkDates, getCalendar, book, myBookings, hostBookings };
+module.exports = { checkDates, getCalendar, book, myBookings, hostBookings, confirmPayment };
