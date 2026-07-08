@@ -1,16 +1,22 @@
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Toast from './components/Toast';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+
 function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper">
-      <div className="text-center">
-        <h1 className="font-display text-5xl font-semibold text-primary">
-          LuxeLodging
-        </h1>
-        <p className="font-mono text-sm text-muted mt-2 tracking-wide">
-          FIND YOUR NEXT STAY
-        </p>
-      </div>
+    <div className="min-h-screen bg-paper">
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+      <Toast />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
