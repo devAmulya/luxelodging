@@ -2,7 +2,7 @@ const { isRangeAvailable, getBookedDates } = require('../../models/mysql/availab
 const { findPropertyById } = require('../../models/mysql/property.model');
 const { getConnection } = require('../../config/mysql');
 const { lockAndCheckAvailability, markDatesAsBooked } = require('../../models/mysql/availability.model');
-const { insertBooking, findBookingsByGuest, findBookingsByHost, updatePaymentStatus } = require('../../models/mysql/booking.model');
+const { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById, updatePaymentStatus } = require('../../models/mysql/booking.model');
 const { deleteCacheByPattern } = require('../../utils/cache');
 const razorpay = require('../../config/razorpay');
 const crypto = require('crypto');
@@ -102,9 +102,20 @@ const createBooking = async (guestId, { propertyId, checkIn, checkOut, numberOfG
   }
 };
 
-const verifyPayment = async (bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
-  const body = razorpayOrderId + '|' + razorpayPaymentId;
+const verifyPayment = async (guestId, bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+  const booking = await findBookingById(bookingId);
 
+  if (!booking) {
+    throw new Error('Booking not found');
+  }
+  if (booking.guest_id !== guestId) {
+    throw new Error('You do not have permission to verify this booking');
+  }
+  if (booking.razorpay_order_id !== razorpayOrderId) {
+    throw new Error('Order does not match this booking');
+  }
+
+  const body = razorpayOrderId + '|' + razorpayPaymentId;
   const expectedSignature = crypto
     .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
     .update(body)

@@ -50,7 +50,7 @@ const confirmPayment = async (req, res) => {
       return error(res, 400, 'All payment verification fields are required');
     }
 
-    const result = await verifyPayment(bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature);
+    const result = await verifyPayment(req.user.id, bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature);
     return success(res, 200, result.message, result);
   } catch (err) {
     return error(res, 400, err.message);
