@@ -10,7 +10,7 @@ const { getCache, setCache } = require('../../utils/cache');
 const { deleteCacheByPattern } = require('../../utils/cache');
 const fs = require('fs');
 const cloudinary = require('../../config/cloudinary');
-const { addPropertyImages, getPropertyImages, deletePropertyImage } = require('../../models/mysql/propertyImage.model');
+const { addPropertyImages, getPropertyImages, deletePropertyImage, promoteNewCoverIfNeeded } = require('../../models/mysql/propertyImage.model');
 
 const addProperty = async (hostId, data) => {
   const {
@@ -50,11 +50,36 @@ const getMyProperties = async (hostId) => {
 };
 
 const editProperty = async (id, hostId, fields) => {
-  const affectedRows = await updateProperty(id, hostId, fields);
+  const fieldMap = {
+    title: 'title',
+    description: 'description',
+    address: 'address',
+    city: 'city',
+    country: 'country',
+    latitude: 'latitude',
+    longitude: 'longitude',
+    pricePerNight: 'price_per_night',
+    bedrooms: 'bedrooms',
+    bathrooms: 'bathrooms',
+    beds: 'beds',
+    guestsAllowed: 'guests_allowed',
+    isActive: 'is_active',
+  };
+
+  const mappedFields = {};
+  for (const key in fields) {
+    if (fieldMap[key]) {
+      mappedFields[fieldMap[key]] = fields[key];
+    }
+  }
+
+  const affectedRows = await updateProperty(id, hostId, mappedFields);
   if (!affectedRows) {
     throw new Error('Property not found or you do not have permission to edit it');
   }
-  await deleteCacheByPattern('search:*'); // invalidate all cached searches
+
+  await deleteCacheByPattern('search:*');
+
   return { message: 'Property updated successfully' };
 };
 
@@ -99,6 +124,8 @@ const removePropertyImage = async (propertyId, imageId, hostId) => {
   if (!affectedRows) {
     throw new Error('Image not found');
   }
+
+  await promoteNewCoverIfNeeded(propertyId);
 
   return { message: 'Image deleted successfully' };
 };

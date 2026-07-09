@@ -8,3 +8,6 @@ export const checkAvailabilityApi = (propertyId, checkIn, checkOut) =>
 
 export const createBookingApi = (data) => axiosInstance.post('/bookings', data);
 export const verifyPaymentApi = (data) => axiosInstance.post('/bookings/verify-payment', data);
+
+export const getMyBookingsApi = () => axiosInstance.get('/bookings/my-bookings');
+export const getHostBookingsApi = () => axiosInstance.get('/bookings/host-bookings');

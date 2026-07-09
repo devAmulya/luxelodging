@@ -29,6 +29,12 @@ const Navbar = () => {
       <div className="flex items-center gap-4 font-sans text-sm">
         {isAuthenticated ? (
           <>
+            <Link
+              to={user?.role === 'host' ? '/dashboard/host' : '/dashboard/guest'}
+              className="text-ink hover:text-primary"
+            >
+              {user?.role === 'host' ? 'My Listings' : 'My Bookings'}
+            </Link>
             <span className="text-ink">
               Hi, <span className="font-medium">{user?.name}</span>
               <span className="ml-1 text-xs text-muted uppercase font-mono">({user?.role})</span>

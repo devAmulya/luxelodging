@@ -8,6 +8,9 @@ import PropertyDetail from './pages/PropertyDetail';
 import BookingPage from './pages/BookingPage';
 import BookingConfirmation from './pages/BookingConfirmation';
 import ProtectedRoute from './components/ProtectedRoute';
+import GuestDashboard from './pages/GuestDashboard';
+import HostDashboard from './pages/HostDashboard';
+import PropertyForm from './pages/PropertyForm';
 
 function App() {
   return (
@@ -27,6 +30,18 @@ function App() {
           <ProtectedRoute allowedRoles={['guest']}>
             <BookingConfirmation />
           </ProtectedRoute>
+        } />
+        <Route path="/dashboard/guest" element={
+          <ProtectedRoute allowedRoles={['guest']}><GuestDashboard /></ProtectedRoute>
+        } />
+        <Route path="/dashboard/host" element={
+          <ProtectedRoute allowedRoles={['host']}><HostDashboard /></ProtectedRoute>
+        } />
+        <Route path="/host/properties/new" element={
+          <ProtectedRoute allowedRoles={['host']}><PropertyForm /></ProtectedRoute>
+        } />
+        <Route path="/host/properties/:id/edit" element={
+          <ProtectedRoute allowedRoles={['host']}><PropertyForm /></ProtectedRoute>
         } />
       </Routes>
       <Toast />
