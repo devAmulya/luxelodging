@@ -4,6 +4,7 @@ import Toast from './components/Toast';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PropertyDetail from './pages/PropertyDetail';
 
 function App() {
   return (
@@ -13,6 +14,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/properties/:id" element={<PropertyDetail />} />
+        
       </Routes>
       <Toast />
     </div>

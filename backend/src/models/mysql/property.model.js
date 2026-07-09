@@ -69,8 +69,9 @@ const searchProperties = async (filters) => {
   const { city, minPrice, maxPrice, guests, checkIn, checkOut, keyword } = filters;
 
   let query = `
-    SELECT DISTINCT p.* FROM properties p
+    SELECT DISTINCT p.*, pi.image_url as cover_image FROM properties p
     LEFT JOIN availability a ON p.id = a.property_id
+    LEFT JOIN property_images pi ON p.id = pi.property_id AND pi.is_cover = TRUE
     WHERE p.is_active = TRUE
   `;
   const values = [];
