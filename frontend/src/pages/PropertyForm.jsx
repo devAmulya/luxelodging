@@ -4,6 +4,8 @@ import { useDispatch } from 'react-redux';
 import { createPropertyApi, updatePropertyApi, getPropertyByIdApi, deletePropertyImageApi } from '../api/propertyApi';
 import { showNotification } from '../features/notification/notificationSlice';
 import ImageUploader from '../components/ImageUploader';
+import LocationPicker from '../components/LocationPicker';
+import LatLngInputs from '../components/LatLngInputs';
 
 const emptyForm = {
   title: '', description: '', address: '', city: '', country: '',
@@ -20,6 +22,7 @@ const PropertyForm = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [position, setPosition] = useState(null);
 
   const loadProperty = () => {
     getPropertyByIdApi(id)
@@ -31,6 +34,9 @@ const PropertyForm = () => {
           bedrooms: p.bedrooms, bathrooms: p.bathrooms, beds: p.beds, guestsAllowed: p.guests_allowed,
         });
         setImages(p.images || []);
+        if (p.latitude && p.longitude) {
+          setPosition({ lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) });
+        }
       })
       .catch(() => dispatch(showNotification({ message: 'Property not found', type: 'error' })))
       .finally(() => setLoading(false));
@@ -46,11 +52,16 @@ const PropertyForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      const payload = {
+        ...form,
+        latitude: position?.lat ?? null,
+        longitude: position?.lng ?? null,
+      };
       if (isEdit) {
-        await updatePropertyApi(id, form);
+        await updatePropertyApi(id, payload);
         dispatch(showNotification({ message: 'Property updated', type: 'success' }));
       } else {
-        const res = await createPropertyApi(form);
+        const res = await createPropertyApi(payload);
         dispatch(showNotification({ message: 'Property created — now add some photos', type: 'success' }));
         navigate(`/host/properties/${res.data.data.id}/edit`);
         return;
@@ -109,6 +120,17 @@ const PropertyForm = () => {
             <label className="block text-sm font-medium text-ink mb-1">Country</label>
             <input name="country" required value={form.country} onChange={handleChange}
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 items-start">
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">Location on map</label>
+            <LocationPicker position={position} onSelect={setPosition} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1 opacity-0 select-none">Coordinates</label>
+            <LatLngInputs position={position} onSelect={setPosition} />
           </div>
         </div>
 

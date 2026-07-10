@@ -5,6 +5,8 @@ import { registerApi } from '../api/authApi';
 import { setCredentials } from '../features/auth/authSlice';
 import { showNotification } from '../features/notification/notificationSlice';
 
+const validatePhone = (phone) => /^[6-9]\d{9}$/.test(phone);
+
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'guest' });
   const [loading, setLoading] = useState(false);
@@ -15,8 +17,17 @@ const Register = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handlePhoneChange = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setForm({ ...form, phone: digitsOnly });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validatePhone(form.phone)) {
+      dispatch(showNotification({ message: 'Enter a valid 10-digit Indian mobile number', type: 'error' }));
+      return;
+    }
     setLoading(true);
     try {
       const res = await registerApi(form);
@@ -63,7 +74,8 @@ const Register = () => {
           <div>
             <label className="block text-sm font-medium text-ink mb-1">Phone</label>
             <input
-              type="tel" name="phone" value={form.phone} onChange={handleChange}
+              type="tel" name="phone" required value={form.phone} onChange={handlePhoneChange}
+              maxLength={10} inputMode="numeric"
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="98765 43210"
             />

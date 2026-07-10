@@ -5,7 +5,7 @@ const register = async (req, res) => {
   try {
     const { name, email, password, role, phone } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
       return error(res, 400, 'All fields are required');
     }
 

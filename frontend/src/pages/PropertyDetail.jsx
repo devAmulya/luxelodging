@@ -6,6 +6,7 @@ import { getCalendarApi } from '../api/bookingApi';
 import ImageGallery from '../components/ImageGallery';
 import ReviewsList from '../components/ReviewsList';
 import BookedCalendar from '../components/BookedCalendar';
+import PropertyMap from '../components/PropertyMap';
 
 const PropertyDetail = () => {
   const { id } = useParams();
@@ -66,11 +67,11 @@ const PropertyDetail = () => {
             {property.description || 'No description provided yet.'}
           </p>
 
-          {bookedDates.length > 0 && (
+          {property.latitude && property.longitude && (
             <>
               <div className="border-t border-dashed border-border my-6"></div>
-              <h3 className="font-display text-lg text-ink mb-3">Availability</h3>
-              <BookedCalendar bookedDates={bookedDates} />
+              <h3 className="font-display text-lg text-ink mb-3">Location</h3>
+              <PropertyMap latitude={property.latitude} longitude={property.longitude} title={property.title} />
             </>
           )}
 
@@ -79,24 +80,31 @@ const PropertyDetail = () => {
           <ReviewsList data={reviews} />
         </div>
 
-        {/* Right: Reserve panel */}
+        {/* Right: Reserve panel + Calendar */}
         <div>
-          <div className="sticky top-6 bg-white border border-border rounded-xl p-5">
-            <div className="flex items-baseline gap-1">
-              <span className="font-mono text-2xl text-accent font-medium">
-                ₹{Number(property.price_per_night).toLocaleString('en-IN')}
-              </span>
-              <span className="text-muted font-sans text-sm">/ night</span>
+          <div className="sticky top-6 space-y-6">
+            <div className="bg-white border border-border rounded-xl p-5">
+              <div className="flex items-baseline gap-1">
+                <span className="font-mono text-2xl text-accent font-medium">
+                  ₹{Number(property.price_per_night).toLocaleString('en-IN')}
+                </span>
+                <span className="text-muted font-sans text-sm">/ night</span>
+              </div>
+
+              <div className="border-t border-dashed border-border my-4"></div>
+
+              <Link
+                to={`/properties/${property.id}/book`}
+                className="block text-center w-full py-3 rounded-md bg-primary text-white font-medium hover:bg-primary-dark transition-colors"
+              >
+                Check dates & reserve
+              </Link>
             </div>
 
-            <div className="border-t border-dashed border-border my-4"></div>
-
-            <Link
-              to={`/properties/${property.id}/book`}
-              className="block text-center w-full py-3 rounded-md bg-primary text-white font-medium hover:bg-primary-dark transition-colors"
-            >
-              Check dates & reserve
-            </Link>
+            <div>
+              <h3 className="font-display text-lg text-ink mb-3">Availability</h3>
+              <BookedCalendar bookedDates={bookedDates} />
+            </div>
           </div>
         </div>
       </div>

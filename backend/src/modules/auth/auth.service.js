@@ -9,6 +9,9 @@ const registerUser = async ({ name, email, password, role, phone }) => {
   if (existingUser) {
     throw new Error('Email already registered');
   }
+  if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
+    throw new Error('Enter a valid 10-digit Indian mobile number');
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const userId = await createUser({ name, email, hashedPassword, role, phone });
