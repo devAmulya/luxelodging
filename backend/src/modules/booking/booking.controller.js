@@ -1,6 +1,6 @@
 const { checkAvailability, getPropertyCalendar } = require('./booking.service');
 const { success, error } = require('../../utils/response');
-const { createBooking, getMyBookings, getHostBookings, verifyPayment } = require('./booking.service');
+const { createBooking, getMyBookings, getHostBookings, verifyPayment, cancelBooking } = require('./booking.service');
 
 const checkDates = async (req, res) => {
   try {
@@ -75,4 +75,13 @@ const hostBookings = async (req, res) => {
   }
 };
 
-module.exports = { checkDates, getCalendar, book, myBookings, hostBookings, confirmPayment };
+const cancel = async (req, res) => {
+  try {
+    const result = await cancelBooking(req.user.id, req.params.id);
+    return success(res, 200, result.message);
+  } catch (err) {
+    return error(res, 400, err.message);
+  }
+};
+
+module.exports = { checkDates, getCalendar, book, myBookings, hostBookings, confirmPayment, cancel };

@@ -52,4 +52,15 @@ const markDatesAsBooked = async (connection, propertyId, checkIn, checkOut) => {
   );
 };
 
-module.exports = { isRangeAvailable, getBookedDates, lockAndCheckAvailability, markDatesAsBooked };
+const releaseDates = async (connection, propertyId, checkIn, checkOut) => {
+  await connection.query(
+    `UPDATE availability SET is_booked = FALSE WHERE property_id = ? AND date >= ? AND date < ?`,
+    [propertyId, checkIn, checkOut]
+  );
+};
+
+module.exports = {
+  isRangeAvailable, getBookedDates, lockAndCheckAvailability, markDatesAsBooked, releaseDates
+};
+
+module.exports = { isRangeAvailable, getBookedDates, lockAndCheckAvailability, markDatesAsBooked, releaseDates };

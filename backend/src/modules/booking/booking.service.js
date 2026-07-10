@@ -1,11 +1,12 @@
 const { isRangeAvailable, getBookedDates } = require('../../models/mysql/availability.model');
 const { findPropertyById } = require('../../models/mysql/property.model');
 const { getConnection } = require('../../config/mysql');
-const { lockAndCheckAvailability, markDatesAsBooked } = require('../../models/mysql/availability.model');
+const { lockAndCheckAvailability, markDatesAsBooked, releaseDates } = require('../../models/mysql/availability.model');
 const { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById, updatePaymentStatus } = require('../../models/mysql/booking.model');
 const { deleteCacheByPattern } = require('../../utils/cache');
 const razorpay = require('../../config/razorpay');
 const crypto = require('crypto');
+
 
 const checkAvailability = async (propertyId, checkIn, checkOut) => {
   const property = await findPropertyById(propertyId);
@@ -140,6 +141,47 @@ const getHostBookings = async (hostId) => {
   return await findBookingsByHost(hostId);
 };
 
+const cancelBooking = async (guestId, bookingId) => {
+  const booking = await findBookingById(bookingId);
+
+  if (!booking) {
+    throw new Error('Booking not found');
+  }
+  if (booking.guest_id !== guestId) {
+    throw new Error('You do not have permission to cancel this booking');
+  }
+  if (booking.status === 'cancelled') {
+    throw new Error('This booking is already cancelled');
+  }
+  if (booking.payment_status !== 'pending') {
+    throw new Error('Only unpaid bookings can be cancelled this way — paid bookings require a refund request');
+  }
+
+  const connection = await getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Same property-row lock pattern as booking creation — keeps this
+    // consistent with every other write that touches availability
+    await connection.query('SELECT id FROM properties WHERE id = ? FOR UPDATE', [booking.property_id]);
+
+    await releaseDates(connection, booking.property_id, booking.check_in, booking.check_out);
+
+    await connection.query(`UPDATE bookings SET status = 'cancelled' WHERE id = ?`, [bookingId]);
+
+    await connection.commit();
+    await deleteCacheByPattern('search:*');
+
+    return { message: 'Booking cancelled successfully' };
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+};
+
 module.exports = {
-  checkAvailability, getPropertyCalendar, createBooking, getMyBookings, getHostBookings, verifyPayment
+  checkAvailability, getPropertyCalendar, createBooking, getMyBookings, getHostBookings, verifyPayment, cancelBooking
 };

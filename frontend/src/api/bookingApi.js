@@ -11,3 +11,5 @@ export const verifyPaymentApi = (data) => axiosInstance.post('/bookings/verify-p
 
 export const getMyBookingsApi = () => axiosInstance.get('/bookings/my-bookings');
 export const getHostBookingsApi = () => axiosInstance.get('/bookings/host-bookings');
+
+export const cancelBookingApi = (bookingId) => axiosInstance.patch(`/bookings/${bookingId}/cancel`);
