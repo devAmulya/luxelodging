@@ -4,7 +4,7 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
+    phone VARCHAR(20) NOT NULL,
     profile_image VARCHAR(500),
     role ENUM('guest', 'host') DEFAULT 'guest',
     is_verified BOOLEAN DEFAULT FALSE,
@@ -74,7 +74,7 @@ CREATE TABLE bookings (
     status ENUM('confirmed', 'cancelled', 'completed') DEFAULT 'confirmed',
     payment_status ENUM('pending', 'paid', 'refunded') DEFAULT 'pending',
     razorpay_order_id VARCHAR(100) DEFAULT NULL,
-    razorpay_payment_id VARCHAR(100) DEFAULT NULL
+    razorpay_payment_id VARCHAR(100) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (guest_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -1,0 +1,55 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: luxelodging-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: luxelodging_docker_pw
+      MYSQL_DATABASE: luxelodging
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/src/models/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pluxelodging_docker_pw"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: luxelodging-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # These override backend/.env — inside Docker's internal network, MySQL
+      # is reached by service name ("mysql"), not localhost, and this container
+      # uses a fresh, throwaway database rather than your host machine's
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: luxelodging_docker_pw
+      MYSQL_DATABASE: luxelodging
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:5000/api
+    container_name: luxelodging-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
