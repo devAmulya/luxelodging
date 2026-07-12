@@ -10,8 +10,21 @@ const reviewRoutes = require('./modules/reviews/reviews.routes');
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+  'http://localhost:4173'
+].filter(Boolean);
+
+app.use(cors({
+  origin: allowedOrigins,
+}));
+
 app.use(express.json());
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
