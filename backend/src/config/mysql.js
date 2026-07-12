@@ -1,6 +1,6 @@
 const mysql = require('mysql2/promise');
 
-const pool = mysql.createPool({
+const poolConfig = {
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
@@ -8,11 +8,19 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
-
-const getConnection = async () => {
-  return await pool.getConnection();
 };
+
+// Managed MySQL providers (Aiven, etc.) require SSL/TLS — a local install doesn't.
+// This only activates when a CA certificate is actually provided, so local
+// development is completely unaffected.
+if (process.env.MYSQL_SSL_CA) {
+  poolConfig.ssl = {
+    ca: process.env.MYSQL_SSL_CA,
+    rejectUnauthorized: true,
+  };
+}
+
+const pool = mysql.createPool(poolConfig);
 
 const testConnection = async () => {
   try {
@@ -22,6 +30,10 @@ const testConnection = async () => {
   } catch (error) {
     console.error('❌ MySQL Connection Failed:', error.message);
   }
+};
+
+const getConnection = async () => {
+  return await pool.getConnection();
 };
 
 module.exports = { pool, testConnection, getConnection };
