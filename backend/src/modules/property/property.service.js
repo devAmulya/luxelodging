@@ -8,10 +8,9 @@ const {
 } = require('../../models/mysql/property.model');
 const { getCache, setCache } = require('../../utils/cache');
 const { deleteCacheByPattern } = require('../../utils/cache');
-const fs = require('fs');
 const cloudinary = require('../../config/cloudinary');
 const { addPropertyImages, getPropertyImages, deletePropertyImage, promoteNewCoverIfNeeded } = require('../../models/mysql/propertyImage.model');
-
+const { Readable } = require('stream');
 const addProperty = async (hostId, data) => {
   const {
     title, description, address, city, country,
@@ -92,22 +91,30 @@ const removeProperty = async (id, hostId) => {
   return { message: 'Property deleted successfully' };
 };
 
+const uploadBufferToCloudinary = (buffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    Readable.from(buffer).pipe(uploadStream);
+  });
+};
+
 const uploadPropertyImages = async (propertyId, hostId, files) => {
   const property = await findPropertyById(propertyId);
   if (!property || property.host_id !== hostId) {
-    // cleanup temp files before throwing
-    files.forEach(file => fs.unlinkSync(file.path));
     throw new Error('Property not found or you do not have permission');
   }
 
   const uploadedUrls = [];
 
   for (const file of files) {
-    const result = await cloudinary.uploader.upload(file.path, {
-      folder: 'luxelodging/properties'
-    });
+    const result = await uploadBufferToCloudinary(file.buffer, 'luxelodging/properties');
     uploadedUrls.push(result.secure_url);
-    fs.unlinkSync(file.path); // delete temp local file after upload
   }
 
   await addPropertyImages(propertyId, uploadedUrls);
