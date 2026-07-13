@@ -3,15 +3,16 @@ import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Toast from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import BookingPage from './pages/BookingPage';
+import BookingConfirmation from './pages/BookingConfirmation';
+import GuestDashboard from './pages/GuestDashboard';
+import HostDashboard from './pages/HostDashboard';
 
-const Home = lazy(() => import('./pages/Home'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
+// Only these two actually pull in Leaflet — genuinely worth splitting out
 const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
-const BookingPage = lazy(() => import('./pages/BookingPage'));
-const BookingConfirmation = lazy(() => import('./pages/BookingConfirmation'));
-const GuestDashboard = lazy(() => import('./pages/GuestDashboard'));
-const HostDashboard = lazy(() => import('./pages/HostDashboard'));
 const PropertyForm = lazy(() => import('./pages/PropertyForm'));
 
 function App() {
