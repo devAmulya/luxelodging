@@ -10,6 +10,7 @@ import BookingPage from './pages/BookingPage';
 import BookingConfirmation from './pages/BookingConfirmation';
 import GuestDashboard from './pages/GuestDashboard';
 import HostDashboard from './pages/HostDashboard';
+import ChatWidget from './components/ChatWidget';
 
 // Only these two actually pull in Leaflet — genuinely worth splitting out
 const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
@@ -46,6 +47,7 @@ function App() {
         </Routes>
       </Suspense>
       <Toast />
+      <ChatWidget />
     </div>
   );
 }

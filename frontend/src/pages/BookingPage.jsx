@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getPropertyByIdApi } from '../api/propertyApi';
 import { createBookingApi, verifyPaymentApi } from '../api/bookingApi';
@@ -11,9 +11,14 @@ const BookingPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const location = useLocation();
 
   const [property, setProperty] = useState(null);
-  const [form, setForm] = useState({ checkIn: '', checkOut: '', numberOfGuests: 1 });
+  const [form, setForm] = useState({
+    checkIn: location.state?.checkIn || '',
+    checkOut: location.state?.checkOut || '',
+    numberOfGuests: location.state?.numberOfGuests || 1,
+  });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
