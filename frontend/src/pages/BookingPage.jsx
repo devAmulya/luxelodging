@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getPropertyByIdApi } from '../api/propertyApi';
 import { createBookingApi, verifyPaymentApi } from '../api/bookingApi';
-import { setCurrentBooking } from '../features/booking/bookingSlice';
+import { setCurrentBooking, setChatEvent } from '../features/booking/bookingSlice';
 import { showNotification } from '../features/notification/notificationSlice';
 
 const BookingPage = () => {
@@ -28,6 +28,16 @@ const BookingPage = () => {
       .catch(() => dispatch(showNotification({ message: 'Property not found', type: 'error' })))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (location.state?.checkIn || location.state?.checkOut || location.state?.numberOfGuests) {
+      setForm({
+        checkIn: location.state.checkIn || '',
+        checkOut: location.state.checkOut || '',
+        numberOfGuests: location.state.numberOfGuests || 1,
+      });
+    }
+  }, [location.state]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -89,6 +99,15 @@ const BookingPage = () => {
               numberOfGuests: form.numberOfGuests,
             }));
 
+            dispatch(setChatEvent({
+              type: 'confirmed',
+              bookingReference: booking.bookingReference,
+              propertyTitle: property.title,
+              checkIn: booking.checkIn,
+              checkOut: booking.checkOut,
+              totalPrice: booking.totalPrice,
+            }));
+
             dispatch(showNotification({ message: 'Booking confirmed!', type: 'success' }));
             navigate('/booking-confirmation');
           } catch (err) {
@@ -105,6 +124,7 @@ const BookingPage = () => {
               message: 'Payment cancelled. Your dates are held temporarily, but not confirmed.',
               type: 'info',
             }));
+            dispatch(setChatEvent({ type: 'cancelled', propertyTitle: property.title }));
           },
         },
       };
@@ -112,6 +132,7 @@ const BookingPage = () => {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', () => {
         dispatch(showNotification({ message: 'Payment failed. Please try again.', type: 'error' }));
+        dispatch(setChatEvent({ type: 'failed', propertyTitle: property.title }));
       });
       rzp.open();
 

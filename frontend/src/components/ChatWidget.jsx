@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { sendMessageApi } from '../api/agentApi';
 import { showNotification } from '../features/notification/notificationSlice';
+import { clearChatEvent } from '../features/booking/bookingSlice';
 
 const MAX_MESSAGE_LENGTH = 500;
 const STORAGE_KEY = 'luxelodging_chat_interaction_id';
@@ -62,6 +63,7 @@ const BookingProposalCard = ({ proposal }) => {
 
 const ChatWidget = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const chatEvent = useSelector((state) => state.booking.chatEvent);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([greeting()]);
@@ -91,6 +93,25 @@ const ChatWidget = () => {
     }
     wasAuthenticated.current = isAuthenticated;
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!chatEvent) return;
+
+    let text = '';
+    if (chatEvent.type === 'confirmed') {
+      text = `🎉 Booking confirmed at ${chatEvent.propertyTitle} — ${new Date(chatEvent.checkIn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} to ${new Date(chatEvent.checkOut).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}. Ref: ${chatEvent.bookingReference}. Paid: ₹${Number(chatEvent.totalPrice).toLocaleString('en-IN')}.`;
+    } else if (chatEvent.type === 'cancelled') {
+      text = `Payment for ${chatEvent.propertyTitle} was cancelled — dates are held briefly but not confirmed. You can try again anytime.`;
+    } else if (chatEvent.type === 'failed') {
+      text = `Payment for ${chatEvent.propertyTitle} didn't go through. Feel free to try again.`;
+    }
+
+    if (text) {
+      setMessages((prev) => [...prev, { role: 'system', text, time: new Date() }]);
+      setOpen(true); // surface it even if the widget was closed during checkout
+    }
+    dispatch(clearChatEvent());
+  }, [chatEvent, dispatch]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -162,25 +183,36 @@ const ChatWidget = () => {
           ) : (
             <>
               <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] ${m.role === 'user' ? '' : 'w-full'}`}>
-                      <div
-                        className={`px-3 py-2 rounded-lg text-sm font-sans ${
-                          m.role === 'user'
-                            ? 'bg-primary text-white rounded-br-none'
-                            : 'bg-paper text-ink rounded-bl-none border border-border'
-                        }`}
-                      >
-                        {m.text}
+                {messages.map((m, i) => {
+                  if (m.role === 'system') {
+                    return (
+                      <div key={i} className="flex justify-center">
+                        <div className="max-w-[90%] text-center px-3 py-2 rounded-lg text-xs font-sans bg-accent/10 text-ink border border-accent/30">
+                          {m.text}
+                        </div>
                       </div>
-                      <p className={`text-[10px] text-muted font-mono mt-0.5 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-                        {formatTime(m.time)}
-                      </p>
-                      {m.bookingProposal && <BookingProposalCard proposal={m.bookingProposal} />}
+                    );
+                  }
+                  return (
+                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] ${m.role === 'user' ? '' : 'w-full'}`}>
+                        <div
+                          className={`px-3 py-2 rounded-lg text-sm font-sans ${
+                            m.role === 'user'
+                              ? 'bg-primary text-white rounded-br-none'
+                              : 'bg-paper text-ink rounded-bl-none border border-border'
+                          }`}
+                        >
+                          {m.text}
+                        </div>
+                        <p className={`text-[10px] text-muted font-mono mt-0.5 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
+                          {formatTime(m.time)}
+                        </p>
+                        {m.bookingProposal && <BookingProposalCard proposal={m.bookingProposal} />}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {loading && (
                   <div className="flex justify-start">
                     <div className="px-3 py-2 rounded-lg text-sm font-sans bg-paper border border-border text-muted">
