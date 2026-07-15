@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getPropertyByIdApi } from '../api/propertyApi';
 import { getReviewsApi } from '../api/reviewApi';
 import { getCalendarApi } from '../api/bookingApi';
+import { getReviewSummaryApi } from '../api/agentApi';
 import ImageGallery from '../components/ImageGallery';
 import ReviewsList from '../components/ReviewsList';
 import BookedCalendar from '../components/BookedCalendar';
@@ -15,6 +16,8 @@ const PropertyDetail = () => {
   const [bookedDates, setBookedDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -37,6 +40,16 @@ const PropertyDetail = () => {
     };
     fetchAll();
   }, [id]);
+
+  useEffect(() => {
+    if (reviews && reviews.totalReviews >= 2) {
+      setSummaryLoading(true);
+      getReviewSummaryApi(id)
+        .then((res) => setAiSummary(res.data.data.summary))
+        .catch(() => setAiSummary(null))
+        .finally(() => setSummaryLoading(false));
+    }
+  }, [reviews, id]);
 
   if (loading) return <p className="text-center py-20 text-muted font-sans">Loading...</p>;
   if (error) return <p className="text-center py-20 text-error font-sans">{error}</p>;
@@ -77,6 +90,15 @@ const PropertyDetail = () => {
 
           <div className="border-t border-dashed border-border my-6"></div>
           <h3 className="font-display text-lg text-ink mb-4">Reviews</h3>
+          {summaryLoading && (
+            <p className="text-xs text-muted font-sans mb-3">Summarizing reviews...</p>
+          )}
+          {aiSummary && (
+            <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <p className="font-mono text-xs text-primary uppercase tracking-wide mb-1">✨ What guests are saying</p>
+              <p className="text-sm text-ink font-sans">{aiSummary}</p>
+            </div>
+          )}
           <ReviewsList data={reviews} />
         </div>
 

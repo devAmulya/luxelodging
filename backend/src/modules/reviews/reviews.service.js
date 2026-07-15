@@ -1,6 +1,7 @@
 const Review = require('../../models/mongo/review.model');
 const { findBookingById } = require('../../models/mysql/booking.model');
 const { findUserById } = require('../../models/mysql/user.model');
+const { deleteCache } = require('../../utils/cache');
 
 const addReview = async (guestId, { propertyId, bookingId, rating, comment, guestName }) => {
   // Verify booking exists and belongs to this guest
@@ -38,6 +39,8 @@ const addReview = async (guestId, { propertyId, bookingId, rating, comment, gues
     rating,
     comment
   });
+
+  await deleteCache(`review-summary:${propertyId}`);
 
   return review;
 };
