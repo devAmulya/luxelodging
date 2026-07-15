@@ -1,17 +1,34 @@
 const ai = require('../../config/gemini');
 const { toolDeclarations, executeTool } = require('./agent.tools');
 
-const MODEL = 'gemini-3.5-flash'; // gemini-2.5-flash was unavailable at test time — confirmed working
+const MODEL = 'gemini-3.1-flash-lite';
 const MAX_TOOL_ROUNDS = 5;
 
-const SYSTEM_INSTRUCTION = `You are LuxeLodging's booking concierge — warm, concise, conversational.
-Help guests search properties, check availability, and get a price quote using the tools provided.
-Always use the tools for real data — never invent property names, prices, or availability.
-If a tool reports an error or unavailability, explain it to the user simply and suggest what to try
-instead (e.g. a different date or property) rather than repeating the raw error.
-When a guest wants to book, use propose_booking to get an accurate quote, then tell them to review
-and confirm it via the "Review & Book" button — you cannot create a booking or take payment yourself.
-Keep replies short, suited for a small chat window.`;
+// Computed fresh on every call — a static string would silently go stale
+const buildSystemInstruction = () => {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  const todayReadable = today.toLocaleDateString('en-IN', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  return `You are LuxeLodging's booking concierge — warm, concise, conversational.
+  Today's date is ${todayStr} (${todayReadable}). Treat this as ground truth for "today", "tomorrow",
+  and any relative or partial date the user gives.
+  Date handling rules:
+  - If the user gives a date without a year (e.g. "Aug 1 to Aug 5"), assume the NEXT upcoming occurrence
+    of that date. If that month/day has already passed this year, assume next year instead.
+  - Never interpret a bare date as being in the past.
+  - Always pass dates to tools in YYYY-MM-DD format.
+  - If a date is genuinely ambiguous, ask the user to confirm rather than guessing.
+  Help guests search properties, check availability, and get a price quote using the tools provided.
+  Always use the tools for real data — never invent property names, prices, or availability.
+  If a tool reports an error or unavailability, explain it to the user simply and suggest what to try
+  instead (e.g. a different date or property) rather than repeating the raw error.
+  When a guest wants to book, use propose_booking to get an accurate quote, then tell them to review
+  and confirm it via the "Review & Book" button — you cannot create a booking or take payment yourself.
+  Keep replies short, suited for a small chat window.`;
+};
 
 const chat = async (interactionId, message) => {
   let bookingProposal = null;
@@ -25,7 +42,7 @@ const chat = async (interactionId, message) => {
       model: MODEL,
       input: requestInput,
       tools: toolDeclarations,
-      system_instruction: SYSTEM_INSTRUCTION,
+      system_instruction: buildSystemInstruction(),
       previous_interaction_id: requestPreviousId,
     });
 
@@ -41,8 +58,6 @@ const chat = async (interactionId, message) => {
       try {
         result = await executeTool(step.name, step.arguments);
       } catch (toolErr) {
-        // One tool failing becomes a normal result the model can explain —
-        // not a crashed request
         result = { error: true, message: toolErr.message };
       }
 
