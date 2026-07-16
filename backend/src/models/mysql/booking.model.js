@@ -55,4 +55,13 @@ const updatePaymentStatus = async (bookingId, status, razorpayOrderId = null, ra
   return result.affectedRows;
 };
 
-module.exports = { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById, updatePaymentStatus };
+const autoCompletePastBookings = async () => {
+  await pool.query(
+    `UPDATE bookings SET status = 'completed' WHERE status = 'confirmed' AND check_out < CURDATE()`
+  );
+};
+
+module.exports = {
+  insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById,
+  updatePaymentStatus, autoCompletePastBookings
+};

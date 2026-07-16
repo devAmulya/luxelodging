@@ -1,8 +1,26 @@
+import { useSelector, useDispatch } from 'react-redux';
+import { deleteReviewApi } from '../api/reviewApi';
+import { showNotification } from '../features/notification/notificationSlice';
+
 const Star = ({ filled }) => (
   <span className={filled ? 'text-accent' : 'text-border'}>★</span>
 );
 
-const ReviewsList = ({ data }) => {
+const ReviewsList = ({ data, onDeleted }) => {
+  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  const handleDelete = async (reviewId) => {
+    if (!window.confirm('Delete this review? This cannot be undone.')) return;
+    try {
+      await deleteReviewApi(reviewId);
+      dispatch(showNotification({ message: 'Review deleted', type: 'success' }));
+      onDeleted();
+    } catch (err) {
+      dispatch(showNotification({ message: err.response?.data?.message || 'Could not delete review', type: 'error' }));
+    }
+  };
+
   if (!data || data.totalReviews === 0) {
     return (
       <p className="text-muted font-sans text-sm">No reviews yet — be the first to stay here.</p>
@@ -26,8 +44,16 @@ const ReviewsList = ({ data }) => {
                 {new Date(review.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
               </span>
             </div>
-            <div className="my-1">
-              {[1, 2, 3, 4, 5].map((n) => <Star key={n} filled={n <= review.rating} />)}
+            <div className="my-1 flex items-center justify-between">
+              <div>{[1, 2, 3, 4, 5].map((n) => <Star key={n} filled={n <= review.rating} />)}</div>
+              {user?.id === review.guestId && (
+                <button
+                  onClick={() => handleDelete(review._id)}
+                  className="text-xs text-error font-sans hover:underline"
+                >
+                  Delete
+                </button>
+              )}
             </div>
             {review.comment && <p className="text-sm text-ink font-sans">{review.comment}</p>}
           </div>

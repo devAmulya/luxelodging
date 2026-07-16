@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { getMyBookingsApi, cancelBookingApi } from '../api/bookingApi';
+import { createReviewApi } from '../api/reviewApi';
 import { showNotification } from '../features/notification/notificationSlice';
 
 const paymentColors = {
@@ -10,9 +11,78 @@ const paymentColors = {
   refunded: 'bg-error/10 text-error',
 };
 
+const StarPicker = ({ value, onChange }) => (
+  <div className="flex gap-1">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <button
+        key={n}
+        type="button"
+        onClick={() => onChange(n)}
+        className={`text-2xl leading-none ${n <= value ? 'text-accent' : 'text-border'}`}
+        aria-label={`${n} stars`}
+      >
+        ★
+      </button>
+    ))}
+  </div>
+);
+
+const ReviewForm = ({ booking, onSubmitted }) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const dispatch = useDispatch();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (rating === 0) {
+      dispatch(showNotification({ message: 'Please select a star rating', type: 'error' }));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await createReviewApi({
+        propertyId: booking.property_id,
+        bookingId: booking.id,
+        rating,
+        comment: comment.trim() || undefined,
+      });
+      dispatch(showNotification({ message: 'Review submitted — thank you!', type: 'success' }));
+      onSubmitted(booking.id);
+    } catch (err) {
+      dispatch(showNotification({ message: err.response?.data?.message || 'Could not submit review', type: 'error' }));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="px-5 pb-4 space-y-2 border-t border-border pt-3">
+      <StarPicker value={rating} onChange={setRating} />
+      <textarea
+        rows={2}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        maxLength={1000}
+        placeholder="How was your stay? (optional)"
+        className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+      <button
+        type="submit"
+        disabled={submitting}
+        className="px-4 py-1.5 rounded-md bg-primary text-white text-sm font-sans hover:bg-primary-dark transition-colors disabled:opacity-50"
+      >
+        {submitting ? 'Submitting...' : 'Submit review'}
+      </button>
+    </form>
+  );
+};
+
 const GuestDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewFormFor, setReviewFormFor] = useState(null);
+  const [reviewedIds, setReviewedIds] = useState(new Set());
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -30,6 +100,11 @@ const GuestDashboard = () => {
     } catch (err) {
       dispatch(showNotification({ message: err.response?.data?.message || 'Could not cancel booking', type: 'error' }));
     }
+  };
+
+  const handleReviewed = (bookingId) => {
+    setReviewedIds((prev) => new Set(prev).add(bookingId));
+    setReviewFormFor(null);
   };
 
   if (loading) return <p className="text-center py-20 text-muted font-sans">Loading your bookings...</p>;
@@ -88,6 +163,21 @@ const GuestDashboard = () => {
                     Cancel booking
                   </button>
                 </div>
+              )}
+
+              {b.status === 'completed' && !reviewedIds.has(b.id) && (
+                reviewFormFor === b.id ? (
+                  <ReviewForm booking={b} onSubmitted={handleReviewed} />
+                ) : (
+                  <div className="px-5 pb-4">
+                    <button
+                      onClick={() => setReviewFormFor(b.id)}
+                      className="w-full py-2 rounded-md border border-border text-ink text-sm font-sans hover:bg-paper transition-colors"
+                    >
+                      ★ Leave a review
+                    </button>
+                  </div>
+                )
               )}
             </div>
           ))}

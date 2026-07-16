@@ -59,4 +59,21 @@ const getPropertyReviews = async (propertyId) => {
   };
 };
 
-module.exports = { addReview, getPropertyReviews };
+const deleteReview = async (guestId, reviewId) => {
+  const review = await Review.findById(reviewId);
+
+  if (!review) {
+    throw new Error('Review not found');
+  }
+  if (review.guestId !== guestId) {
+    throw new Error('You can only delete your own reviews');
+  }
+
+  const propertyId = review.propertyId;
+  await Review.deleteOne({ _id: reviewId });
+  await deleteCache(`review-summary:${propertyId}`);
+
+  return { message: 'Review deleted successfully' };
+};
+
+module.exports = { addReview, getPropertyReviews, deleteReview };

@@ -1,4 +1,4 @@
-const { addReview, getPropertyReviews } = require('./reviews.service');
+const { addReview, getPropertyReviews, deleteReview } = require('./reviews.service');
 const { success, error } = require('../../utils/response');
 
 const create = async (req, res) => {
@@ -26,4 +26,13 @@ const getByProperty = async (req, res) => {
   }
 };
 
-module.exports = { create, getByProperty };
+const remove = async (req, res) => {
+  try {
+    const result = await deleteReview(req.user.id, req.params.reviewId);
+    return success(res, 200, result.message);
+  } catch (err) {
+    return error(res, 403, err.message);
+  }
+};
+
+module.exports = { create, getByProperty, remove };
