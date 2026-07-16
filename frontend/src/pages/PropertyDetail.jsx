@@ -42,14 +42,26 @@ const PropertyDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    if (reviews && reviews.totalReviews >= 2) {
-      setSummaryLoading(true);
-      getReviewSummaryApi(id)
-        .then((res) => setAiSummary(res.data.data.summary))
-        .catch(() => setAiSummary(null))
-        .finally(() => setSummaryLoading(false));
+    if (!reviews || reviews.totalReviews < 2) {
+      setAiSummary(null);
+      return;
     }
+
+    setSummaryLoading(true);
+    getReviewSummaryApi(id)
+      .then((res) => setAiSummary(res.data.data.summary))
+      .catch(() => setAiSummary(null))
+      .finally(() => setSummaryLoading(false));
   }, [reviews, id]);
+
+  const refetchReviews = async () => {
+    try {
+      const res = await getReviewsApi(id);
+      setReviews(res.data.data);
+    } catch (err) {
+      // reviews section just won't refresh — not worth a user-facing error for this
+    }
+  };
 
   if (loading) return <p className="text-center py-20 text-muted font-sans">Loading...</p>;
   if (error) return <p className="text-center py-20 text-error font-sans">{error}</p>;
@@ -99,7 +111,7 @@ const PropertyDetail = () => {
               <p className="text-sm text-ink font-sans">{aiSummary}</p>
             </div>
           )}
-          <ReviewsList data={reviews} />
+          <ReviewsList data={reviews} onDeleted={refetchReviews} />
         </div>
 
         {/* Right: Reserve panel + Calendar */}

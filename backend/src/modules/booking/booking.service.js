@@ -2,7 +2,7 @@ const { isRangeAvailable, getBookedDates } = require('../../models/mysql/availab
 const { findPropertyById } = require('../../models/mysql/property.model');
 const { getConnection } = require('../../config/mysql');
 const { lockAndCheckAvailability, markDatesAsBooked, releaseDates } = require('../../models/mysql/availability.model');
-const { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById, updatePaymentStatus } = require('../../models/mysql/booking.model');
+const { insertBooking, findBookingsByGuest, findBookingsByHost, findBookingById, updatePaymentStatus, autoCompletePastBookings } = require('../../models/mysql/booking.model');
 const { deleteCacheByPattern } = require('../../utils/cache');
 const razorpay = require('../../config/razorpay');
 const crypto = require('crypto');
@@ -134,10 +134,12 @@ const verifyPayment = async (guestId, bookingId, razorpayOrderId, razorpayPaymen
 };
 
 const getMyBookings = async (guestId) => {
+  await autoCompletePastBookings();
   return await findBookingsByGuest(guestId);
 };
 
 const getHostBookings = async (hostId) => {
+  await autoCompletePastBookings();
   return await findBookingsByHost(hostId);
 };
 
