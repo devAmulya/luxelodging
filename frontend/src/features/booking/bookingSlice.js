@@ -6,6 +6,7 @@ const initialState = {
   checkOut: null,
   numberOfGuests: 1,
   currentBooking: null,
+  chatEvent: null,
 };
 
 const bookingSlice = createSlice({
@@ -18,9 +19,15 @@ const bookingSlice = createSlice({
     setCurrentBooking: (state, action) => {
       state.currentBooking = action.payload;
     },
+    setChatEvent: (state, action) => {
+      state.chatEvent = action.payload;
+    },
+    clearChatEvent: (state) => {
+      state.chatEvent = null;
+    },
     clearBooking: () => initialState,
   },
 });
 
-export const { setBookingDetails, setCurrentBooking, clearBooking } = bookingSlice.actions;
+export const { setBookingDetails, setCurrentBooking, setChatEvent, clearChatEvent, clearBooking } = bookingSlice.actions;
 export default bookingSlice.reducer;

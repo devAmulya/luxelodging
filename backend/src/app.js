@@ -8,6 +8,7 @@ const propertyRoutes = require('./modules/property/property.routes');
 const bookingRoutes = require('./modules/booking/booking.routes');
 const reviewRoutes = require('./modules/reviews/reviews.routes');
 const { pool } = require('./config/mysql');
+const agentRoutes = require('./modules/agent/agent.routes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/agent', agentRoutes);
 
 const startServer = async () => {
   await testConnection();

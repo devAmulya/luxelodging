@@ -6,6 +6,7 @@ import { showNotification } from '../features/notification/notificationSlice';
 import ImageUploader from '../components/ImageUploader';
 import LocationPicker from '../components/LocationPicker';
 import LatLngInputs from '../components/LatLngInputs';
+import { generateDescriptionApi } from '../api/agentApi';
 
 const emptyForm = {
   title: '', description: '', address: '', city: '', country: '',
@@ -23,6 +24,10 @@ const PropertyForm = () => {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [position, setPosition] = useState(null);
+
+  const [notes, setNotes] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [showAiHelper, setShowAiHelper] = useState(false);
 
   const loadProperty = () => {
     getPropertyByIdApi(id)
@@ -47,6 +52,29 @@ const PropertyForm = () => {
   }, [id]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleGenerateDescription = async () => {
+    if (!notes.trim()) {
+      dispatch(showNotification({ message: 'Add a few notes first — e.g. "near beach, 2BHK, rooftop"', type: 'error' }));
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await generateDescriptionApi({
+        notes: notes.trim(),
+        city: form.city,
+        country: form.country,
+        bedrooms: form.bedrooms,
+        guestsAllowed: form.guestsAllowed,
+      });
+      setForm((prev) => ({ ...prev, description: res.data.data.description }));
+      dispatch(showNotification({ message: 'Description generated — feel free to edit it', type: 'success' }));
+    } catch (err) {
+      dispatch(showNotification({ message: err.response?.data?.message || 'Could not generate description', type: 'error' }));
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,7 +127,38 @@ const PropertyForm = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Description</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-ink">Description</label>
+            <button
+              type="button"
+              onClick={() => setShowAiHelper((v) => !v)}
+              className="text-xs font-sans text-primary hover:underline"
+            >
+              ✨ {showAiHelper ? 'Hide' : 'Generate with AI'}
+            </button>
+          </div>
+
+          {showAiHelper && (
+            <div className="mb-2 p-3 bg-paper border border-dashed border-border rounded-md">
+              <textarea
+                rows={2}
+                maxLength={800}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Jot down rough notes — e.g. near beach, 2BHK, rooftop, quiet street, walking distance to cafes"
+                className="w-full px-2 py-1.5 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={handleGenerateDescription}
+                disabled={generating}
+                className="mt-2 px-3 py-1.5 text-xs rounded-md bg-primary text-white font-sans hover:bg-primary-dark transition-colors disabled:opacity-50"
+              >
+                {generating ? 'Writing...' : 'Generate description'}
+              </button>
+            </div>
+          )}
+
           <textarea name="description" rows={4} value={form.description} onChange={handleChange}
             className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
